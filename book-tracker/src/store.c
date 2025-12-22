@@ -7,7 +7,6 @@
 #define BOOKS_FILE "data/books.tsv"
 #define MAX_LINE 512
 
-
 int load_books(Book books[], int max_books) {
     FILE *fp = fopen(BOOKS_FILE, "r");
     if (!fp) {
@@ -27,7 +26,7 @@ int load_books(Book books[], int max_books) {
 
         token = strtok(NULL, "\t");
         if (!token) continue;
-        strncpy(b.title, token, TITLE_LEN);
+        strncpy(b.title, token, TITLE_LEN - 1);
         b.title[TITLE_LEN - 1] = '\0';
 
         token = strtok(NULL, "\t");
@@ -40,7 +39,7 @@ int load_books(Book books[], int max_books) {
 
         token = strtok(NULL, "\t\n");
         if (!token) continue;
-        strncpy(b.status, token, STATUS_LEN);
+        strncpy(b.status, token, STATUS_LEN - 1);
         b.status[STATUS_LEN - 1] = '\0';
 
         books[count++] = b;
@@ -49,7 +48,6 @@ int load_books(Book books[], int max_books) {
     fclose(fp);
     return count;
 }
-
 
 int save_books(Book books[], int count) {
     FILE *fp = fopen(BOOKS_FILE, "w");
@@ -60,12 +58,11 @@ int save_books(Book books[], int count) {
 
     for (int i = 0; i < count; i++) {
         fprintf(fp, "%d\t%s\t%d\t%d\t%s\n",
-            books[i].id,
-            books[i].title,
-            books[i].total_pages,
-            books[i].current_page,
-            books[i].status
-        );
+                books[i].id,
+                books[i].title,
+                books[i].total_pages,
+                books[i].current_page,
+                books[i].status);
     }
 
     fclose(fp);
