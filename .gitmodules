@@ -1,0 +1,3 @@
+[submodule "book-tracker/vendor/pdcurses"]
+	path = book-tracker/vendor/pdcurses
+	url = https://github.com/wmcbrine/PDCurses.git
