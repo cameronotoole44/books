@@ -2,13 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "tui.h"
 #include "commands.h"
 
 static void usage(void) {
-    puts("booktracker\n"
+    puts("booktrack 1.0\n"
          "Usage:\n"
          "  booktracker add \"Title\" <total_pages>\n"
          "  booktracker list\n"
+         "  booktracker log <pages_read>\n  "
          "  booktracker edit-pages <id> <total_pages>\n"
          "  booktracker edit-title <id> \"New Title\"\n"
          "  booktracker delete <id>\n"
@@ -33,10 +35,23 @@ int main(int argc, char **argv) {
         return cmd_add(title, total_pages);
     }
 
+    if (strcmp(argv[1], "tui") == 0) {
+        return cmd_tui();
+    }
+
+
     if (strcmp(argv[1], "list") == 0) {
         return cmd_list();
     }
 
+    if (strcmp(argv[1], "log") == 0) {
+    if (argc != 3) {
+        usage();
+        return 1;
+    }
+    int pages = atoi(argv[2]);
+    return cmd_log(pages);
+}
     if (strcmp(argv[1], "edit-pages") == 0) {
         if (argc != 4) {
             usage();
