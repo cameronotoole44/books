@@ -10,7 +10,7 @@ static void usage(void) {
          "Usage:\n"
          "  booktracker add \"Title\" <total_pages>\n"
          "  booktracker list\n"
-         "  booktracker log <pages_read>\n  "
+         "  booktracker log <ending_page>\n  "
          "  booktracker edit-pages <id> <total_pages>\n"
          "  booktracker edit-title <id> \"New Title\"\n"
          "  booktracker delete <id>\n"

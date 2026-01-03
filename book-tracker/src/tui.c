@@ -143,7 +143,7 @@ int cmd_tui(void) {
             char title[256] = {0};
 
             if (choice == 1) {  // log pages read
-                pages = prompt_int_curses("How many pages did you read today?");
+                pages = prompt_int_curses("What page are you on now?");
             } else if (choice == 3) { // set current
                 id = prompt_int_curses("Enter book id to set as current:");
             } else if (choice == 5) { // edit title
