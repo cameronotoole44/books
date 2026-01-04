@@ -26,38 +26,196 @@ static void show_message_curses(const char *title, const char *message) {
     wait_for_key_curses();
 }
 
+static int confirm_yes_no_curses(const char *question) {
+    clear();
+    box(stdscr, 0, 0);
+    mvprintw(1, 2, "Confirmation");
+    mvhline(2, 1, ACS_HLINE, COLS - 2);
+    mvprintw(4, 2, "%s", question);
+    mvprintw(6, 2, "[Y]es  [N]o");
+    refresh();
+
+    while (1) {
+        int ch = getch();
+        if (ch == 'y' || ch == 'Y') return 1;
+        if (ch == 'n' || ch == 'N') return 0;
+    }
+}
+
+static void edit_book_curses(Book *book) {
+    clear();
+    box(stdscr, 0, 0);
+    mvprintw(1, 2, "Edit Book: [%d] %s", book->id, book->title);
+    mvhline(2, 1, ACS_HLINE, COLS - 2);
+    
+    mvprintw(4, 2, "What would you like to edit?");
+    mvprintw(6, 4, "[T] Title");
+    mvprintw(7, 4, "[P] Total pages");
+    mvprintw(8, 4, "[Q] Cancel");
+    refresh();
+
+    int ch = getch();
+    
+    if (ch == 't' || ch == 'T') {
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "Edit Title");
+        mvhline(2, 1, ACS_HLINE, COLS - 2);
+        mvprintw(4, 2, "Current title: %s", book->title);
+        mvprintw(6, 2, "Enter new title:");
+        mvprintw(7, 2, "> ");
+        
+        echo();
+        curs_set(1);
+        refresh();
+        
+        char new_title[TITLE_LEN] = {0};
+        getnstr(new_title, TITLE_LEN - 1);
+        
+        noecho();
+        curs_set(0);
+        
+        if (new_title[0] != '\0') {
+            strncpy(book->title, new_title, TITLE_LEN - 1);
+            book->title[TITLE_LEN - 1] = '\0';
+            show_message_curses("Success", "Title updated!");
+        }
+    } else if (ch == 'p' || ch == 'P') {
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "Edit Total Pages");
+        mvhline(2, 1, ACS_HLINE, COLS - 2);
+        mvprintw(4, 2, "Current total pages: %d", book->total_pages);
+        mvprintw(6, 2, "Enter new total pages:");
+        mvprintw(7, 2, "> ");
+        
+        echo();
+        curs_set(1);
+        refresh();
+        
+        char buf[64] = {0};
+        getnstr(buf, 63);
+        int new_pages = atoi(buf);
+        
+        noecho();
+        curs_set(0);
+        
+        if (new_pages > 0) {
+            book->total_pages = new_pages;
+            if (book->current_page > book->total_pages) {
+                book->current_page = book->total_pages;
+            }
+            show_message_curses("Success", "Total pages updated!");
+        } else {
+            show_message_curses("Error", "Invalid page number!");
+        }
+    }
+}
+
 static void show_books_curses(void) {
     Book books[MAX_BOOKS];
     int count = load_books(books, MAX_BOOKS);
 
-    clear();
-    box(stdscr, 0, 0);
-    mvprintw(1, 2, "BookTrack - All Books");
-    mvhline(2, 1, ACS_HLINE, COLS - 2);
-
     if (count == 0) {
-        mvprintw(4, 2, "No books yet. Add one with the 'add' command.");
-        wait_for_key_curses();
+        show_message_curses("No Books", "No books yet. Add one with the 'add' command.");
         return;
     }
 
-    int start_row = 4;
-    int max_display = LINES - 6;
+    int selected = 0;
+    int needs_save = 0;
 
-    for (int i = 0; i < count && i < max_display; i++) {
-        Book *b = &books[i];
-        float pct = (b->total_pages > 0) ? (100.0 * b->current_page / b->total_pages) : 0;
-        
-        mvprintw(start_row + i, 2, "[%d] %s", b->id, b->title);
-        mvprintw(start_row + i, 40, "%d/%d pages (%.0f%%) - %s",
-                 b->current_page, b->total_pages, pct, b->status);
+    while (1) {
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "BookTrack - All Books");
+        mvprintw(2, 2, "Arrows: navigate | Enter/S: start reading | E: edit | D: delete | Q: back");
+        mvhline(3, 1, ACS_HLINE, COLS - 2);
+
+        int start_row = 5;
+        int max_display = LINES - 8;
+
+        for (int i = 0; i < count && i < max_display; i++) {
+            Book *b = &books[i];
+            float pct = (b->total_pages > 0) ? (100.0 * b->current_page / b->total_pages) : 0;
+            
+            if (i == selected) attron(A_REVERSE);
+            
+            mvprintw(start_row + i, 2, "[%d] %-35s %4d/%-4d (%3.0f%%) %s",
+                     b->id, b->title,
+                     b->current_page, b->total_pages, pct, b->status);
+            
+            if (i == selected) attroff(A_REVERSE);
+        }
+
+        if (count > max_display) {
+            mvprintw(LINES - 3, 2, "... and %d more books (screen too small)", count - max_display);
+        }
+
+        refresh();
+
+        int ch = getch();
+
+        if (ch == 'q' || ch == 'Q') {
+            if (needs_save) {
+                save_books(books, count);
+            }
+            break;
+        }
+
+        if (ch == KEY_UP) {
+            selected = (selected - 1 + count) % count;
+        } else if (ch == KEY_DOWN) {
+            selected = (selected + 1) % count;
+        } else if (ch == '\n' || ch == KEY_ENTER || ch == 's' || ch == 'S') {
+            if (strcmp(books[selected].status, STATUS_UNREAD) != 0) {
+                show_message_curses("Error", "Can only start reading unread books!");
+                continue;
+            }
+
+            for (int i = 0; i < count; i++) {
+                if (strcmp(books[i].status, STATUS_READING) == 0) {
+                    strncpy(books[i].status, STATUS_UNREAD, STATUS_LEN);
+                    books[i].status[STATUS_LEN - 1] = '\0';
+                }
+            }
+
+            strncpy(books[selected].status, STATUS_READING, STATUS_LEN);
+            books[selected].status[STATUS_LEN - 1] = '\0';
+            
+            save_books(books, count);
+            
+            char msg[256];
+            snprintf(msg, 256, "Now reading: [%d] %s", books[selected].id, books[selected].title);
+            show_message_curses("Success", msg);
+            
+        } else if (ch == 'e' || ch == 'E') {
+            edit_book_curses(&books[selected]);
+            needs_save = 1;
+            
+        } else if (ch == 'd' || ch == 'D') {
+            char question[256];
+            snprintf(question, 256, "Delete [%d] %s?", books[selected].id, books[selected].title);
+            
+            if (confirm_yes_no_curses(question)) {
+                for (int i = selected; i < count - 1; i++) {
+                    books[i] = books[i + 1];
+                }
+                count--;
+                
+                if (selected >= count && count > 0) {
+                    selected = count - 1;
+                }
+                
+                save_books(books, count);
+                show_message_curses("Success", "Book deleted!");
+                
+                if (count == 0) {
+                    show_message_curses("No Books", "All books deleted!");
+                    break;
+                }
+            }
+        }
     }
-
-    if (count > max_display) {
-        mvprintw(LINES - 3, 2, "... and %d more books (screen too small)", count - max_display);
-    }
-
-    wait_for_key_curses();
 }
 
 static void log_pages_curses(void) {
@@ -311,7 +469,7 @@ int cmd_tui(void) {
         "Books",
         "Log pages",
         "Pick book",
-        "Add (multiple) book(s)",
+        "Add book(s)",
         "Finish book",
         "Quit"
     };
@@ -356,15 +514,15 @@ int cmd_tui(void) {
         if (ch == '\n' || ch == KEY_ENTER) {
             if (choice == 5) {  // Quit
                 break;
-            } else if (choice == 0) {  // List books
+            } else if (choice == 0) {
                 show_books_curses();
-            } else if (choice == 1) {  // Log pages
+            } else if (choice == 1) {
                 log_pages_curses();
-            } else if (choice == 2) {  // Pick random
+            } else if (choice == 2) {
                 pick_random_curses();
-            } else if (choice == 3) {  // Add another book
+            } else if (choice == 3) {
                 set_current_curses();
-            } else if (choice == 4) {  // Finish current
+            } else if (choice == 4) {
                 finish_current_curses();
             }
         }
