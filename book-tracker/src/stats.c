@@ -147,7 +147,7 @@ int yearly_projection(Book books[], int book_count) {
     }
 
     printf("\n Projection (2026)\n");
-    printf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    printf("========================================\n");
     printf("  Reading speed: %.1f pages/day\n", pages_per_day);
     printf("  Days until 2026-12-31: %d days\n", days_left);
     printf("  Total pages readable: %d pages\n", total_pages_readable);
