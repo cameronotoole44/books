@@ -8,6 +8,7 @@
 #include "store.h"
 #include "models.h"
 #include "dates.h"
+#include "stats.h"
 
 #define MAX_BOOKS 1000
 
@@ -57,6 +58,7 @@ static void edit_book_curses(Book *book) {
     int ch = getch();
     
     if (ch == 't' || ch == 'T') {
+        // title
         clear();
         box(stdscr, 0, 0);
         mvprintw(1, 2, "Edit Title");
@@ -122,6 +124,7 @@ static void show_books_curses(void) {
     }
 
     int selected = 0;
+    int scroll_offset = 0;
     int needs_save = 0;
 
     while (1) {
@@ -133,22 +136,33 @@ static void show_books_curses(void) {
 
         int start_row = 5;
         int max_display = LINES - 8;
+        
+        if (selected < scroll_offset) {
+            scroll_offset = selected;
+        }
+        if (selected >= scroll_offset + max_display) {
+            scroll_offset = selected - max_display + 1;
+        }
 
-        for (int i = 0; i < count && i < max_display; i++) {
-            Book *b = &books[i];
+        for (int i = 0; i < max_display && (scroll_offset + i) < count; i++) {
+            int book_idx = scroll_offset + i;
+            Book *b = &books[book_idx];
             float pct = (b->total_pages > 0) ? (100.0 * b->current_page / b->total_pages) : 0;
             
-            if (i == selected) attron(A_REVERSE);
+            if (book_idx == selected) attron(A_REVERSE);
             
             mvprintw(start_row + i, 2, "[%d] %-35s %4d/%-4d (%3.0f%%) %s",
                      b->id, b->title,
                      b->current_page, b->total_pages, pct, b->status);
             
-            if (i == selected) attroff(A_REVERSE);
+            if (book_idx == selected) attroff(A_REVERSE);
         }
 
-        if (count > max_display) {
-            mvprintw(LINES - 3, 2, "... and %d more books (screen too small)", count - max_display);
+        if (scroll_offset > 0) {
+            mvprintw(4, COLS - 10, "^ up ^");
+        }
+        if (scroll_offset + max_display < count) {
+            mvprintw(LINES - 3, COLS - 10, "v down v");
         }
 
         refresh();
@@ -163,9 +177,13 @@ static void show_books_curses(void) {
         }
 
         if (ch == KEY_UP) {
-            selected = (selected - 1 + count) % count;
+            if (selected > 0) {
+                selected--;
+            }
         } else if (ch == KEY_DOWN) {
-            selected = (selected + 1) % count;
+            if (selected < count - 1) {
+                selected++;
+            }
         } else if (ch == '\n' || ch == KEY_ENTER || ch == 's' || ch == 'S') {
             if (strcmp(books[selected].status, STATUS_UNREAD) != 0) {
                 show_message_curses("Error", "Can only start reading unread books!");
@@ -221,7 +239,7 @@ static void show_books_curses(void) {
 static void log_pages_curses(void) {
     Book books[MAX_BOOKS];
     int count = load_books(books, MAX_BOOKS);
-    
+
     int cur = -1;
     for (int i = 0; i < count; i++) {
         if (strcmp(books[i].status, STATUS_READING) == 0) {
@@ -394,74 +412,320 @@ static void finish_current_curses(void) {
     show_message_curses("Book Finished", msg);
 }
 
-static void set_current_curses(void) {
+static void add_books_menu_curses(void) {
+    clear();
+    box(stdscr, 0, 0);
+    mvprintw(1, 2, "Add Book(s)");
+    mvhline(2, 1, ACS_HLINE, COLS - 2);
+    
+    mvprintw(4, 2, "What would you like to do?");
+    mvprintw(6, 4, "[N] Add a new book to library");
+    mvprintw(7, 4, "[R] Start reading an existing book");
+    mvprintw(8, 4, "[Q] Cancel");
+    refresh();
+
+    int ch = getch();
+    
+    if (ch == 'n' || ch == 'N') {
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "Add New Book");
+        mvhline(2, 1, ACS_HLINE, COLS - 2);
+        
+        mvprintw(4, 2, "Enter book title:");
+        mvprintw(5, 2, "> ");
+        
+        echo();
+        curs_set(1);
+        refresh();
+        
+        char title[TITLE_LEN] = {0};
+        getnstr(title, TITLE_LEN - 1);
+        
+        if (title[0] == '\0') {
+            noecho();
+            curs_set(0);
+            show_message_curses("Cancelled", "No title entered.");
+            return;
+        }
+        
+        mvprintw(7, 2, "Enter total pages:");
+        mvprintw(8, 2, "> ");
+        refresh();
+        
+        char buf[64] = {0};
+        getnstr(buf, 63);
+        int total_pages = atoi(buf);
+        
+        noecho();
+        curs_set(0);
+        
+        if (total_pages <= 0) {
+            show_message_curses("Error", "Invalid page count!");
+            return;
+        }
+        
+        Book books[MAX_BOOKS];
+        int count = load_books(books, MAX_BOOKS);
+        
+        if (count >= MAX_BOOKS) {
+            show_message_curses("Error", "Book limit reached!");
+            return;
+        }
+        
+        Book b;
+        int max_id = 0;
+        for (int i = 0; i < count; i++) {
+            if (books[i].id > max_id) max_id = books[i].id;
+        }
+        b.id = max_id + 1;
+        
+        strncpy(b.title, title, TITLE_LEN - 1);
+        b.title[TITLE_LEN - 1] = '\0';
+        b.total_pages = total_pages;
+        b.current_page = 0;
+        strncpy(b.status, STATUS_UNREAD, STATUS_LEN - 1);
+        b.status[STATUS_LEN - 1] = '\0';
+        
+        books[count++] = b;
+        
+        if (save_books(books, count) != 0) {
+            show_message_curses("Error", "Failed to save book!");
+            return;
+        }
+        
+        char msg[256];
+        snprintf(msg, 256, "Added: [%d] %s (%d pages)", b.id, b.title, b.total_pages);
+        show_message_curses("Success", msg);
+        
+    } else if (ch == 'r' || ch == 'R') {
+        Book books[MAX_BOOKS];
+        int count = load_books(books, MAX_BOOKS);
+        
+        if (count == 0) {
+            show_message_curses("Error", "No books available.");
+            return;
+        }
+
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "Start Reading Book");
+        mvhline(2, 1, ACS_HLINE, COLS - 2);
+        mvprintw(4, 2, "Enter the book ID you want to start reading:");
+        mvprintw(5, 2, "> ");
+        
+        echo();
+        curs_set(1);
+        refresh();
+        
+        char buf[64] = {0};
+        getnstr(buf, 63);
+        int id = atoi(buf);
+        
+        noecho();
+        curs_set(0);
+
+        if (id <= 0) {
+            show_message_curses("Error", "Invalid book ID.");
+            return;
+        }
+
+        int idx = -1;
+        for (int i = 0; i < count; i++) {
+            if (books[i].id == id) {
+                idx = i;
+                break;
+            }
+        }
+
+        if (idx < 0) {
+            show_message_curses("Error", "Book not found with that ID.");
+            return;
+        }
+
+        if (strcmp(books[idx].status, STATUS_UNREAD) != 0) {
+            show_message_curses("Error", "Can only start reading unread books.");
+            return;
+        }
+
+        for (int i = 0; i < count; i++) {
+            if (strcmp(books[i].status, STATUS_READING) == 0) {
+                strncpy(books[i].status, STATUS_UNREAD, STATUS_LEN);
+                books[i].status[STATUS_LEN - 1] = '\0';
+            }
+        }
+
+        strncpy(books[idx].status, STATUS_READING, STATUS_LEN);
+        books[idx].status[STATUS_LEN - 1] = '\0';
+
+        if (save_books(books, count) != 0) {
+            show_message_curses("Error", "Failed to save books.");
+            return;
+        }
+
+        char msg[256];
+        snprintf(msg, 256, "Now reading: [%d] %s", books[idx].id, books[idx].title);
+        show_message_curses("Success", msg);
+    }
+}
+
+static void show_projection_curses(void) {
     Book books[MAX_BOOKS];
     int count = load_books(books, MAX_BOOKS);
     
-    if (count == 0) {
-        show_message_curses("Error", "No books available.");
-        return;
-    }
-
     clear();
     box(stdscr, 0, 0);
-    mvprintw(1, 2, "Add Another Book");
+    mvprintw(1, 2, "Year-End Projection (2026)");
     mvhline(2, 1, ACS_HLINE, COLS - 2);
-    mvprintw(4, 2, "Enter the book ID you want to start reading:");
-    mvprintw(5, 2, "> ");
     
-    echo();
-    curs_set(1);
-    refresh();
-    
-    char buf[64] = {0};
-    getnstr(buf, 63);
-    int id = atoi(buf);
-    
-    noecho();
-    curs_set(0);
-
-    if (id <= 0) {
-        show_message_curses("Error", "Invalid book ID.");
+    FILE *fp = fopen("data/logs.tsv", "r");
+    if (!fp) {
+        mvprintw(4, 2, "No reading logs found yet.");
+        mvprintw(5, 2, "Start logging your reading progress!");
+        wait_for_key_curses();
         return;
     }
+    
+    char dates[365][11];
+    int date_count = 0;
+    int total_pages_logged = 0;
+    char line[1024];
+    
+    while (fgets(line, sizeof(line), fp)) {
+        char line_copy[1024];
+        strncpy(line_copy, line, sizeof(line_copy));
+        
+        char *date = strtok(line_copy, "\t");
+        char *bid = strtok(NULL, "\t");
+        char *pgs = strtok(NULL, "\t");
+        
+        if (!date || !pgs) continue;
+        
+        int pages = atoi(pgs);
+        total_pages_logged += pages;
+        
+        int found = 0;
+        for (int i = 0; i < date_count; i++) {
+            if (strcmp(dates[i], date) == 0) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found && date_count < 365) {
+            strncpy(dates[date_count], date, 10);
+            dates[date_count][10] = '\0';
+            date_count++;
+        }
+    }
+    fclose(fp);
+    
+    if (date_count == 0) {
+        mvprintw(4, 2, "No reading logs found yet.");
+        mvprintw(5, 2, "Start logging your reading progress!");
+        wait_for_key_curses();
+        return;
+    }
+    
+    double pages_per_day = (double)total_pages_logged / date_count;
+    
+    char today[11];
+    char target[11] = "2026-12-31";
+    if (today_ymd(today) != 0) {
+        mvprintw(4, 2, "Error: couldn't get today's date");
+        wait_for_key_curses();
+        return;
+    }
+    
+    int days_left = days_between_ymd(today, target);
+    if (days_left <= 0) {
+        mvprintw(4, 2, "We're past 2026! Time to set a new goal.");
+        wait_for_key_curses();
+        return;
+    }
+    
+    int total_pages_readable = (int)(pages_per_day * days_left);
 
-    int idx = -1;
+    int books_finishable = 0;
+    int pages_counted = 0;
+    int unread_count = 0;
+    
     for (int i = 0; i < count; i++) {
-        if (books[i].id == id) {
-            idx = i;
+        if (strcmp(books[i].status, STATUS_UNREAD) == 0) {
+            unread_count++;
+            if (pages_counted + books[i].total_pages <= total_pages_readable) {
+                pages_counted += books[i].total_pages;
+                books_finishable++;
+            }
+        }
+    }
+    
+    mvprintw(4, 2, "Reading speed: %.1f pages/day", pages_per_day);
+    mvprintw(5, 2, "Days until 2026-12-31: %d days", days_left);
+    mvprintw(6, 2, "Total pages readable: %d pages", total_pages_readable);
+    mvprintw(8, 2, "You could finish %d of your %d unread books!", 
+             books_finishable, unread_count);
+    mvprintw(9, 2, "(%d pages out of available %d)", pages_counted, total_pages_readable);
+    
+    wait_for_key_curses();
+}
+
+static void show_stats_curses(void) {
+    Book books[MAX_BOOKS];
+    int count = load_books(books, MAX_BOOKS);
+    
+    clear();
+    box(stdscr, 0, 0);
+    mvprintw(1, 2, "Reading Statistics");
+    mvhline(2, 1, ACS_HLINE, COLS - 2);
+    
+    int unread = 0, reading = 0, finished = 0;
+    int total_pages = 0, pages_read = 0;
+    
+    for (int i = 0; i < count; i++) {
+        if (strcmp(books[i].status, STATUS_UNREAD) == 0) unread++;
+        else if (strcmp(books[i].status, STATUS_READING) == 0) reading++;
+        else if (strcmp(books[i].status, STATUS_FINISHED) == 0) finished++;
+        
+        total_pages += books[i].total_pages;
+        pages_read += books[i].current_page;
+    }
+    
+    float completion = (total_pages > 0) ? (100.0 * pages_read / total_pages) : 0;
+    
+    mvprintw(4, 2, "Total Books: %d", count);
+    mvprintw(5, 4, "Unread: %d", unread);
+    mvprintw(6, 4, "Reading: %d", reading);
+    mvprintw(7, 4, "Finished: %d", finished);
+    
+    mvprintw(9, 2, "Progress:");
+    mvprintw(10, 4, "Total pages: %d", total_pages);
+    mvprintw(11, 4, "Pages read: %d (%.1f%%)", pages_read, completion);
+    
+    int cur = -1;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(books[i].status, STATUS_READING) == 0) {
+            cur = i;
             break;
         }
     }
-
-    if (idx < 0) {
-        show_message_curses("Error", "Book not found with that ID.");
-        return;
-    }
-
-    if (strcmp(books[idx].status, STATUS_UNREAD) != 0) {
-        show_message_curses("Error", "Can only set an unread book as current.");
-        return;
-    }
-
-    for (int i = 0; i < count; i++) {
-        if (strcmp(books[i].status, STATUS_READING) == 0) {
-            strncpy(books[i].status, STATUS_UNREAD, STATUS_LEN);
-            books[i].status[STATUS_LEN - 1] = '\0';
+    
+    if (cur >= 0) {
+        mvprintw(13, 2, "Currently Reading:");
+        mvprintw(14, 4, "[%d] %s", books[cur].id, books[cur].title);
+        float pct = 100.0 * books[cur].current_page / books[cur].total_pages;
+        mvprintw(15, 4, "%d/%d pages (%.1f%%)", 
+                 books[cur].current_page, books[cur].total_pages, pct);
+        
+        double speed = avg_pages_per_day(books[cur].id, 7);
+        if (speed > 0) {
+            int remaining = books[cur].total_pages - books[cur].current_page;
+            int days_left = (int)(remaining / speed);
+            mvprintw(17, 4, "Reading speed: %.1f pages/day (last 7 days)", speed);
+            mvprintw(18, 4, "Estimated completion: %d days", days_left);
         }
     }
-
-    strncpy(books[idx].status, STATUS_READING, STATUS_LEN);
-    books[idx].status[STATUS_LEN - 1] = '\0';
-
-    if (save_books(books, count) != 0) {
-        show_message_curses("Error", "Failed to save books.");
-        return;
-    }
-
-    char msg[256];
-    snprintf(msg, 256, "Now reading: [%d] %s", books[idx].id, books[idx].title);
-    show_message_curses("Success", msg);
+    
+    wait_for_key_curses();
 }
 
 int cmd_tui(void) {
@@ -471,6 +735,8 @@ int cmd_tui(void) {
         "Pick book",
         "Add book(s)",
         "Finish book",
+        "Projection",
+        "Stats",
         "Quit"
     };
     const int n_items = (int)(sizeof(items) / sizeof(items[0]));
@@ -486,7 +752,7 @@ int cmd_tui(void) {
         clear();
         box(stdscr, 0, 0);
 
-        mvprintw(1, 2, "BookTrack 1.0");
+        mvprintw(1, 2, "BookTrack 2.0");
         mvprintw(2, 2, "Arrows: move   Enter: select   q: quit");
         mvhline(3, 1, ACS_HLINE, COLS - 2);
 
@@ -512,7 +778,7 @@ int cmd_tui(void) {
         }
 
         if (ch == '\n' || ch == KEY_ENTER) {
-            if (choice == 5) {  // Quit
+            if (choice == 7) {
                 break;
             } else if (choice == 0) {
                 show_books_curses();
@@ -521,9 +787,13 @@ int cmd_tui(void) {
             } else if (choice == 2) {
                 pick_random_curses();
             } else if (choice == 3) {
-                set_current_curses();
+                add_books_menu_curses();
             } else if (choice == 4) {
                 finish_current_curses();
+            } else if (choice == 5) {
+                show_projection_curses();
+            } else if (choice == 6) {
+                show_stats_curses();
             }
         }
     }
