@@ -166,59 +166,6 @@ int cmd_log(int ending_page) {
 
     return 0;
 }
-// int cmd_log(int pages_read) {
-//     if (pages_read <= 0) {
-//         fprintf(stderr, "Error: pages_read must be > 0.\n");
-//         return 1;
-//     }
-
-//     Book books[MAX_BOOKS];
-//     int count = load_books(books, MAX_BOOKS);
-    
-//     int cur = find_current_reading_index(books, count);
-//     if (cur < 0) {
-//         fprintf(stderr, "No current reading book. Use: booktracker pick\n");
-//         return 1;
-//     }
-
-//     LogEntry entry;
-//     if (today_ymd(entry.date) != 0) {
-//         fprintf(stderr, "Error: failed to get today's date.\n");
-//         return 1;
-//     }
-//     entry.book_id = books[cur].id;
-//     entry.pages_read = pages_read;
-//     entry.note[0] = '\0';
-    
-//     if (append_log(&entry) != 0) {
-//         fprintf(stderr, "Error: failed to save log.\n");
-//         return 1;
-//     }
-
-//     books[cur].current_page += pages_read;
-//     if (books[cur].current_page > books[cur].total_pages) {
-//         books[cur].current_page = books[cur].total_pages;
-//     }
-
-//     if (save_books(books, count) != 0) {
-//         fprintf(stderr, "Error: failed to save books.\n");
-//         return 1;
-//     }
-
-//     float pct = 100.0 * books[cur].current_page / books[cur].total_pages;
-//     printf("✓ Logged %d pages for [%d] %s\n", pages_read, books[cur].id, books[cur].title);
-//     printf("  Progress: %d/%d pages (%.1f%%)\n", 
-//            books[cur].current_page, books[cur].total_pages, pct);
-
-//     if (books[cur].current_page >= books[cur].total_pages) {
-//         printf("\n You finished %s! Congrats!\n", books[cur].title);
-//         strncpy(books[cur].status, STATUS_FINISHED, STATUS_LEN);
-//         books[cur].status[STATUS_LEN - 1] = '\0';
-//         save_books(books, count);
-//     }
-
-//     return 0;
-// }
 
 int cmd_edit_pages(int id, int new_total_pages) {
     if (id <= 0) {
