@@ -6,7 +6,7 @@
 #include "commands.h"
 
 static void usage(void) {
-    puts("booktrack 1.0\n"
+    puts("booktrack 2.0\n"
          "Usage:\n"
          "  booktracker add \"Title\" <total_pages>\n"
          "  booktracker list\n"
