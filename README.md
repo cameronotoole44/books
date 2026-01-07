@@ -2,7 +2,7 @@
 
 **THE PROBLEM**
 
-i had a problem of wanting to start reading again but having too many unread books and not being able to pick one to start reading and finish the book.
+I had a problem of wanting to start reading again but having too many unread books and not being able to pick one to start reading and finish the book.
 
 **THE SOLUTION**
 
