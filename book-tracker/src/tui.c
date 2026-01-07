@@ -58,7 +58,6 @@ static void edit_book_curses(Book *book) {
     int ch = getch();
     
     if (ch == 't' || ch == 'T') {
-        // title
         clear();
         box(stdscr, 0, 0);
         mvprintw(1, 2, "Edit Title");
@@ -159,10 +158,10 @@ static void show_books_curses(void) {
         }
 
         if (scroll_offset > 0) {
-            mvprintw(4, COLS - 10, "^ up ^");
+            mvprintw(4, COLS - 10, "^ More ^");
         }
         if (scroll_offset + max_display < count) {
-            mvprintw(LINES - 3, COLS - 10, "v down v");
+            mvprintw(LINES - 3, COLS - 10, "v More v");
         }
 
         refresh();
@@ -239,7 +238,7 @@ static void show_books_curses(void) {
 static void log_pages_curses(void) {
     Book books[MAX_BOOKS];
     int count = load_books(books, MAX_BOOKS);
-
+    
     int cur = -1;
     for (int i = 0; i < count; i++) {
         if (strcmp(books[i].status, STATUS_READING) == 0) {
@@ -585,7 +584,7 @@ static void show_projection_curses(void) {
         wait_for_key_curses();
         return;
     }
-    
+
     char dates[365][11];
     int date_count = 0;
     int total_pages_logged = 0;
@@ -644,7 +643,7 @@ static void show_projection_curses(void) {
     }
     
     int total_pages_readable = (int)(pages_per_day * days_left);
-
+    
     int books_finishable = 0;
     int pages_counted = 0;
     int unread_count = 0;
@@ -661,10 +660,13 @@ static void show_projection_curses(void) {
     
     mvprintw(4, 2, "Reading speed: %.1f pages/day", pages_per_day);
     mvprintw(5, 2, "Days until 2026-12-31: %d days", days_left);
-    mvprintw(6, 2, "Total pages readable: %d pages", total_pages_readable);
-    mvprintw(8, 2, "You could finish %d of your %d unread books!", 
-             books_finishable, unread_count);
-    mvprintw(9, 2, "(%d pages out of available %d)", pages_counted, total_pages_readable);
+    mvprintw(6, 2, "On pace to read: %d pages", total_pages_readable);
+    
+    if (books_finishable == unread_count) {
+        mvprintw(8, 2, "All %d books finishable", unread_count);
+    } else {
+        mvprintw(8, 2, "%d of %d books finishable", books_finishable, unread_count);
+    }
     
     wait_for_key_curses();
 }
