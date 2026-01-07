@@ -150,10 +150,13 @@ int yearly_projection(Book books[], int book_count) {
     printf("========================================\n");
     printf("  Reading speed: %.1f pages/day\n", pages_per_day);
     printf("  Days until 2026-12-31: %d days\n", days_left);
-    printf("  Total pages readable: %d pages\n", total_pages_readable);
-    printf("\n  You could finish %d of your %d unread books!\n", 
-           books_finishable, unread_count);
-    printf("     (%d pages out of available %d)\n\n", pages_counted, total_pages_readable);
+    printf("  On pace to read: %d pages\n\n", total_pages_readable);
+    
+    if (books_finishable == unread_count) {
+        printf("  All %d books finishable\n\n", unread_count);
+    } else {
+        printf("  %d of %d books finishable\n\n", books_finishable, unread_count);
+    }
 
     return books_finishable;
 }
