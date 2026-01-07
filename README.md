@@ -1,85 +1,83 @@
-# books
+# booktrack v2.0
 
 **THE PROBLEM**
 
 i had a problem of wanting to start reading again but having too many unread books and not being able to pick one to start reading and finish the book.
 
-**The Solution**
-A command-line tool with a TUI to help you actually finish the books you start reading.
+**THE SOLUTION**
+
+A command-line tool with a full-screen TUI to help you actually finish the books you start reading.
 
 booktrack helps you:
 
 - Track your unread books with page counts
 - Randomly pick your next read
 - Log daily reading progress
-- Get accurate completion projections based on yout reading speed
+- Get accurate completion projections based on your reading speed
 - Stay motivated with stats
 
-# View your library
+## Quick Start
 
+```bash
+# Build
+make clean && make
+
+# Launch TUI (recommended)
+./booktracker tui
+
+# Or use CLI commands
+./booktracker add "1984" 328
 ./booktracker list
-
-# Can't decide? Let fate decide
-
 ./booktracker pick
+./booktracker log 157
+```
 
-# Log your daily reading (the most important command!)
+## TUI Features
 
-./booktracker log 25 # Read 25 pages today
+The interactive TUI provides:
 
-# Check your progress
+- **Books** - Browse, edit, delete, and start reading (arrow keys + e/d/enter)
+- **Log pages** - Track your reading progress (enter page you're on)
+- **Pick book** - Let fate decide your next read
+- **Add book(s)** - Add new books or start reading existing ones
+- **Finish book** - Mark current book complete
+- **Projection** - See how many books you can finish by year-end
+- **Stats** - View reading speed and completion metrics
 
-./booktracker status
+## CLI Commands
 
-# Output:
+### Library Management
 
-Current: 1984 by George Orwell
+- `add <title> <pages>` - Add a new unread book
+- `list` - Show all books (unread, reading, finished)
+- `delete <id>` - Remove a book
+- `edit-title <id> <title>` - Update book title
+- `edit-pages <id> <pages>` - Update page count
 
-Progress: 25/328 pages (7.6%)
+### Reading Flow
 
-Reading speed: 25 pages/day
+- `pick` - Randomly select your next book
+- `set-current <id>` - Manually choose a book to read
+- `log <page>` - Record what page you're on now
+- `finish` - Mark current book as complete
 
-Estimated completion: January 14, 2025 (12 days)
+### Analytics
 
-Keep logging daily
+- `projection` - Year-end reading projection
+- `stats` - View reading statistics
 
-./booktracker log 30
-./booktracker log 22
-./booktracker log 35
+## Data Files
 
-# Finished the book?
+All data stored in TSV format in the `data/` directory:
 
-./booktracker finish
+- `books.tsv` - Your book library
+- `logs.tsv` - Daily reading logs
 
-# View your reading stats
+## Project Status
 
-./booktracker stats
+**Version:** 2.0  
+**Status:** Feature-complete with full TUI
 
-## Commands
+## Technical Notes
 
-**Library Management**
-
-add <title> <pages> - Add a new unread book
-list - Show all books (unread, current, finished)
-delete <id> - Remove a book
-edit-title <id> <title> - Update book title
-edit-pages <id> <pages> - Update page count
-
-**Reading Flow**
-
-pick - Randomly select your next book
-set-current <id> - Manually choose a book to read
-log <pages> - Record pages read today
-status - Show current book progress and projection
-finish - Mark current book as complete
-
-**Analytics**
-
-stats - View reading statistics (speed, completion rate, etc.)
-
-**Data Files**
-All data stored in TSV format in the data/ directory:
-
-books.tsv - Your book library
-logs.tsv - Daily reading logs
-notes.tsv - Book notes (future feature)
+Built in C using pdcurses for the TUI. TSV files for simple, human-readable data storage.
