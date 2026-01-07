@@ -66,6 +66,8 @@ The interactive TUI provides:
 - `projection` - Year-end reading projection
 - `stats` - View reading statistics
 
+## Example Workflow
+
 ## Data Files
 
 All data stored in TSV format in the `data/` directory:
@@ -77,7 +79,3 @@ All data stored in TSV format in the `data/` directory:
 
 **Version:** 2.0  
 **Status:** Feature-complete with full TUI
-
-## Technical Notes
-
-Built in C using pdcurses for the TUI. TSV files for simple, human-readable data storage.
