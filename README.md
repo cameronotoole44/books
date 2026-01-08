@@ -66,16 +66,9 @@ The interactive TUI provides:
 - `projection` - Year-end reading projection
 - `stats` - View reading statistics
 
-## Example Workflow
-
 ## Data Files
 
 All data stored in TSV format in the `data/` directory:
 
 - `books.tsv` - Your book library
 - `logs.tsv` - Daily reading logs
-
-## Project Status
-
-**Version:** 2.0  
-**Status:** Feature-complete with full TUI
