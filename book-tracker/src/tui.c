@@ -63,7 +63,7 @@ static void edit_book_curses(Book *book) {
     
     mvprintw(4, 2, "What would you like to edit?");
     mvprintw(6, 4, "[T] Title");
-    mvprintw(7, 4, "[P] Total pages");
+    mvprintw(7, 4, "[P] Pages");
     mvprintw(8, 4, "[S] Status");
     mvprintw(9, 4, "[Q] Cancel");
     refresh();
@@ -97,33 +97,74 @@ static void edit_book_curses(Book *book) {
     } else if (ch == 'p' || ch == 'P') {
         clear();
         box(stdscr, 0, 0);
-        mvprintw(1, 2, "Edit Total Pages");
+        mvprintw(1, 2, "Edit Pages");
         mvhline(2, 1, ACS_HLINE, COLS - 2);
-        mvprintw(4, 2, "Current total pages: %d", book->total_pages);
-        mvprintw(6, 2, "Enter new total pages:");
-        mvprintw(7, 2, "> ");
-        
-        echo();
-        curs_set(1);
+        mvprintw(4, 2, "Current: %d / %d pages", book->current_page, book->total_pages);
+        mvprintw(6, 2, "What would you like to edit?");
+        mvprintw(8, 4, "[T] Total pages");
+        mvprintw(9, 4, "[C] Current page");
+        mvprintw(10, 4, "[Q] Cancel");
         refresh();
         
-        char buf[64] = {0};
-        getnstr(buf, 63);
-        int new_pages = atoi(buf);
+        int page_ch = getch();
         
-        noecho();
-        curs_set(0);
-        
-        if (new_pages > 0) {
-            book->total_pages = new_pages;
-            if (book->current_page > book->total_pages) {
-                book->current_page = book->total_pages;
+        if (page_ch == 't' || page_ch == 'T') {
+            clear();
+            box(stdscr, 0, 0);
+            mvprintw(1, 2, "Edit Total Pages");
+            mvhline(2, 1, ACS_HLINE, COLS - 2);
+            mvprintw(4, 2, "Current total pages: %d", book->total_pages);
+            mvprintw(6, 2, "Enter new total pages:");
+            mvprintw(7, 2, "> ");
+            
+            echo();
+            curs_set(1);
+            refresh();
+            
+            char buf[64] = {0};
+            getnstr(buf, 63);
+            int new_pages = atoi(buf);
+            
+            noecho();
+            curs_set(0);
+            
+            if (new_pages > 0) {
+                book->total_pages = new_pages;
+                if (book->current_page > book->total_pages) {
+                    book->current_page = book->total_pages;
+                }
+                show_message_curses("Success", "Total pages updated!");
+            } else {
+                show_message_curses("Error", "Invalid page number!");
             }
-            show_message_curses("Success", "Total pages updated!");
-        } else {
-            show_message_curses("Error", "Invalid page number!");
+        } else if (page_ch == 'c' || page_ch == 'C') {
+            clear();
+            box(stdscr, 0, 0);
+            mvprintw(1, 2, "Edit Current Page");
+            mvhline(2, 1, ACS_HLINE, COLS - 2);
+            mvprintw(4, 2, "Current page: %d / %d", book->current_page, book->total_pages);
+            mvprintw(6, 2, "Enter new current page:");
+            mvprintw(7, 2, "> ");
+            
+            echo();
+            curs_set(1);
+            refresh();
+            
+            char buf[64] = {0};
+            getnstr(buf, 63);
+            int new_current = atoi(buf);
+            
+            noecho();
+            curs_set(0);
+            
+            if (new_current >= 0 && new_current <= book->total_pages) {
+                book->current_page = new_current;
+                show_message_curses("Success", "Current page updated!");
+            } else {
+                show_message_curses("Error", "Invalid page number! Must be between 0 and total pages.");
+            }
         }
-    }else if (ch == 's' || ch == 'S') {
+    } else if (ch == 's' || ch == 'S') {
         clear();
         box(stdscr, 0, 0);
         mvprintw(1, 2, "Edit Status");
@@ -796,7 +837,7 @@ int cmd_tui(void) {
         clear();
         box(stdscr, 0, 0);
 
-        mvprintw(1, 2, "BookTrack 1.0");
+        mvprintw(1, 2, "BookTrack 2.0");
         mvprintw(2, 2, "Arrows: move   Enter: select   q: quit");
         mvhline(3, 1, ACS_HLINE, COLS - 2);
 
