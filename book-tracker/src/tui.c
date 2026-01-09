@@ -23,7 +23,19 @@ static void show_message_curses(const char *title, const char *message) {
     box(stdscr, 0, 0);
     mvprintw(1, 2, "%s", title);
     mvhline(2, 1, ACS_HLINE, COLS - 2);
-    mvprintw(4, 2, "%s", message);
+    
+    char msg_copy[1024];
+    strncpy(msg_copy, message, 1023);
+    msg_copy[1023] = '\0';
+    
+    int row = 4;
+    char *line = strtok(msg_copy, "\n");
+    while (line != NULL && row < LINES - 4) {
+        mvprintw(row, 2, "%s", line);
+        row++;
+        line = strtok(NULL, "\n");
+    }
+    
     wait_for_key_curses();
 }
 
@@ -52,7 +64,8 @@ static void edit_book_curses(Book *book) {
     mvprintw(4, 2, "What would you like to edit?");
     mvprintw(6, 4, "[T] Title");
     mvprintw(7, 4, "[P] Total pages");
-    mvprintw(8, 4, "[Q] Cancel");
+    mvprintw(8, 4, "[S] Status");
+    mvprintw(9, 4, "[Q] Cancel");
     refresh();
 
     int ch = getch();
@@ -109,6 +122,35 @@ static void edit_book_curses(Book *book) {
             show_message_curses("Success", "Total pages updated!");
         } else {
             show_message_curses("Error", "Invalid page number!");
+        }
+    }else if (ch == 's' || ch == 'S') {
+        clear();
+        box(stdscr, 0, 0);
+        mvprintw(1, 2, "Edit Status");
+        mvhline(2, 1, ACS_HLINE, COLS - 2);
+        mvprintw(4, 2, "Current status: %s", book->status);
+        mvprintw(6, 2, "Select new status:");
+        mvprintw(8, 4, "[U] Unread");
+        mvprintw(9, 4, "[R] Reading");
+        mvprintw(10, 4, "[F] Finished");
+        mvprintw(11, 4, "[Q] Cancel");
+        refresh();
+        
+        int status_ch = getch();
+        
+        if (status_ch == 'u' || status_ch == 'U') {
+            strncpy(book->status, STATUS_UNREAD, STATUS_LEN - 1);
+            book->status[STATUS_LEN - 1] = '\0';
+            show_message_curses("Success", "Status changed to unread");
+        } else if (status_ch == 'r' || status_ch == 'R') {
+            strncpy(book->status, STATUS_READING, STATUS_LEN - 1);
+            book->status[STATUS_LEN - 1] = '\0';
+            show_message_curses("Success", "Status changed to reading");
+        } else if (status_ch == 'f' || status_ch == 'F') {
+            strncpy(book->status, STATUS_FINISHED, STATUS_LEN - 1);
+            book->status[STATUS_LEN - 1] = '\0';
+            book->current_page = book->total_pages;
+            show_message_curses("Success", "Status changed to finished");
         }
     }
 }
@@ -584,7 +626,7 @@ static void show_projection_curses(void) {
         wait_for_key_curses();
         return;
     }
-
+    
     char dates[365][11];
     int date_count = 0;
     int total_pages_logged = 0;
@@ -754,7 +796,7 @@ int cmd_tui(void) {
         clear();
         box(stdscr, 0, 0);
 
-        mvprintw(1, 2, "BookTrack 2.0");
+        mvprintw(1, 2, "BookTrack 1.0");
         mvprintw(2, 2, "Arrows: move   Enter: select   q: quit");
         mvhline(3, 1, ACS_HLINE, COLS - 2);
 
