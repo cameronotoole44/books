@@ -1,4 +1,8 @@
-#include <curses.h>
+#ifdef _WIN32
+    #include <curses.h>
+#else
+    #include <ncurses.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
