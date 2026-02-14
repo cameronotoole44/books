@@ -19,13 +19,21 @@ booktrack helps you:
 ## Quick Start
 
 ```bash
-# Build
-make clean && make
+#cd into project directory
+cd book-tracker
 
-# Launch TUI (recommended)
+# build
+
+# linux run
+build.sh
+
+# windows
+build.bat
+
+# launch TUI
 ./booktracker tui
 
-# Or use CLI commands
+# CLI commands (optional)
 ./booktracker add "1984" 328
 ./booktracker list
 ./booktracker pick
