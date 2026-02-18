@@ -2,18 +2,18 @@
 
 **THE PROBLEM**
 
-I had a problem of wanting to start reading again but having too many unread books and not being able to pick one to start reading and finish the book.
+I had a problem of wanting to start reading again but having too many unread books and not being able to pick one to start reading.
 
 **THE SOLUTION**
 
-A command-line tool with a full-screen TUI to help you actually finish the books you start reading.
+A command-line tool with a full-screen TUI to pick a random book from the never ending list.
 
-booktrack helps you:
+booktrack helps:
 
-- Track your unread books with page counts
+- Track unread books with page counts
 - Randomly pick your next read
 - Log daily reading progress
-- Get accurate completion projections based on your reading speed
+- Get accurate completion projections based on your own reading speed
 - Stay motivated with stats
 
 ## Quick Start
@@ -25,10 +25,10 @@ cd book-tracker
 # build
 
 # linux run
-build.sh
+./build.sh
 
 # windows
-build.bat
+./build.bat
 
 # launch TUI
 ./booktracker tui
